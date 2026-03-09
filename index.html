@@ -1044,6 +1044,7 @@ function openZlecenieDetail(id) {
       </div>
       ${adresFull ? `<button class="btn btn-ghost btn-sm btn-block" onclick="sendMessage('${z.klient}','${adresFull}')">💬 Wyślij wiadomość</button>` : ''}
     </div>
+    <button class="btn btn-ghost btn-block" style="margin-bottom:8px" onclick="openEditZlecenie('${z.id}')">✏️ Edytuj zlecenie</button>
     <button class="btn btn-ghost btn-block" onclick="closeModal('modal-detail')">Zamknij</button>
   `;
   openModal('modal-detail');
