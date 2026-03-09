@@ -781,23 +781,88 @@ async function api(action, method='GET', body=null) {
   }
 }
 
-async function loadAll() {
-  showLoading();
-  const [stats, plan, klienci] = await Promise.all([
-    api('getStats'), api('getPlan'), api('getKlienci')
-  ]);
-  STATE.stats    = stats.error ? null : stats;
-  STATE.zlecenia = plan.zlecenia || [];
-  STATE.klienci  = klienci.klienci || [];
-  STATE.loaded   = true;
-  renderAll();
-  hideLoading();
+const CACHE_KEY = 'serwis_cache';
+const CACHE_TTL  = 5 * 60 * 1000; // 5 minut
+
+function saveCache() {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      ts: Date.now(),
+      stats:    STATE.stats,
+      zlecenia: STATE.zlecenia,
+      klienci:  STATE.klienci,
+    }));
+  } catch(e) {}
+}
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return false;
+    const c = JSON.parse(raw);
+    STATE.stats    = c.stats    || null;
+    STATE.zlecenia = c.zlecenia || [];
+    STATE.klienci  = c.klienci  || [];
+    STATE.loaded   = true;
+    return Date.now() - c.ts < CACHE_TTL;
+  } catch(e) { return false; }
+}
+
+async function loadAll(silent=false) {
+  // 1. Pokaż cache natychmiast
+  const fresh = loadCache();
+  if (STATE.loaded) {
+    renderAll();
+    if (!silent) showSyncBadge('Odświeżam...');
+  } else {
+    showLoading();
+  }
+
+  // 2. Pobierz świeże dane w tle
+  try {
+    const [stats, plan, klienci] = await Promise.all([
+      api('getStats'), api('getPlan'), api('getKlienci')
+    ]);
+    if (!stats.error)  STATE.stats    = stats;
+    if (!plan.error)   STATE.zlecenia = plan.zlecenia || [];
+    if (!klienci.error) STATE.klienci = klienci.klienci || [];
+    STATE.loaded = true;
+    saveCache();
+    renderAll();
+    if (!silent) hideSyncBadge();
+  } catch(e) {
+    hideSyncBadge();
+  }
 }
 
 function showLoading() {
-  document.getElementById('view-dashboard').innerHTML = '<div class="loading"><div class="spinner"></div><span>Ładowanie danych...</span></div>';
+  if (!STATE.loaded) {
+    document.getElementById('view-dashboard').innerHTML = '<div class="loading"><div class="spinner"></div><span>Ładowanie...</span></div>';
+  }
 }
-function hideLoading() {}
+
+let syncBadgeTimer;
+function showSyncBadge(msg) {
+  let badge = document.getElementById('sync-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'sync-badge';
+    badge.style.cssText = 'position:fixed;top:70px;right:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--text3);z-index:300;transition:opacity .3s';
+    document.body.appendChild(badge);
+  }
+  badge.textContent = '🔄 ' + msg;
+  badge.style.opacity = '1';
+}
+
+function hideSyncBadge() {
+  const badge = document.getElementById('sync-badge');
+  if (badge) {
+    badge.textContent = '✓ Zsynchronizowano';
+    badge.style.color = 'var(--green)';
+    clearTimeout(syncBadgeTimer);
+    syncBadgeTimer = setTimeout(() => { badge.style.opacity = '0'; }, 2000);
+  }
+}
 
 // ══════════════════════════════════════════════
 // NAVIGATION
@@ -1031,6 +1096,7 @@ async function changeStatus(id, status) {
   if (!z) return;
   // Update locally immediately
   z.status = status;
+  saveCache();
   closeModal('modal-detail');
   toast('✅ Status: ' + status);
   renderView(currentView);
@@ -1277,7 +1343,7 @@ async function saveZlecenie() {
   if (res.error) { toast('❌ Błąd zapisu: ' + res.error); return; }
   toast('✅ Zlecenie ' + res.id + ' zapisane!');
   closeModal('modal-zlecenie');
-  await loadAll();
+  await loadAll(true);
 }
 
 async function saveKlient() {
@@ -1292,7 +1358,7 @@ async function saveKlient() {
   if (res.error) { toast('❌ Błąd: ' + res.error); return; }
   toast('✅ Klient ' + res.id + ' dodany!');
   closeModal('modal-klient');
-  await loadAll();
+  await loadAll(true);
 }
 
 function saveZadanie() {
@@ -1749,19 +1815,21 @@ async function saveEditZlecenie() {
   z.bilans   = przychod - koszt;
   z.notatki  = notatki;
 
+  saveCache();
   closeModal('modal-edit-zlecenie');
   toast('✅ Zlecenie zaktualizowane');
   renderView(currentView);
 
   // Save to Sheets in background
-  await api('updateZlecenie', 'POST', { id, klient, zadanie, data, status, przychod, koszt, notatki });
+  api('updateZlecenie', 'POST', { id, klient, zadanie, data, status, przychod, koszt, notatki });
 }
 
 function deleteZlecenie(id) {
   if (!confirm('Usunąć zlecenie ' + id + '?')) return;
   STATE.zlecenia = STATE.zlecenia.filter(x => x.id !== id);
+  saveCache();
   closeModal('modal-edit-zlecenie');
-  toast('🗑 Zlecenie usunięte lokalnie');
+  toast('🗑 Zlecenie usunięte');
   renderView(currentView);
   api('deleteZlecenie', 'POST', { id });
 }
