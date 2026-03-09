@@ -744,61 +744,37 @@ let STATE = {
 // ══════════════════════════════════════════════
 // API
 // ══════════════════════════════════════════════
-function apiJsonp(action) {
+function apiJsonp(action, params) {
   return new Promise((resolve) => {
-    const cbName = 'cb_' + action + '_' + Date.now();
+    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const script = document.createElement('script');
     const timeout = setTimeout(() => {
       delete window[cbName];
-      document.body.removeChild(script);
+      if(document.body.contains(script)) document.body.removeChild(script);
       resolve({ error: 'timeout' });
-    }, 10000);
+    }, 12000);
     window[cbName] = (data) => {
       clearTimeout(timeout);
       delete window[cbName];
-      document.body.removeChild(script);
+      if(document.body.contains(script)) document.body.removeChild(script);
       resolve(data);
     };
-    script.src = API_URL + '?action=' + action + '&callback=' + cbName;
+    let url = API_URL + '?action=' + action + '&callback=' + cbName;
+    if (params) {
+      Object.entries(params).forEach(([k,v]) => {
+        if (v !== null && v !== undefined) url += '&' + k + '=' + encodeURIComponent(v);
+      });
+    }
+    script.src = url;
     script.onerror = () => { clearTimeout(timeout); resolve({ error: 'offline' }); };
     document.body.appendChild(script);
   });
 }
 
-async function apiPost(body) {
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(body)
-    });
-    return await resp.json();
-  } catch(e) {
-    // CORS fallback – use JSONP with encoded body via GET
-    console.warn('POST fallback:', e.message);
-    return { error: 'offline' };
-  }
-}
-
 async function api(action, method='GET', body=null) {
   try {
-    if (!body) {
-      return await apiJsonp(action);
-    } else {
-      // For POST: try fetch first, fallback to JSONP with params
-      try {
-        const resp = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action, ...body })
-        });
-        return await resp.json();
-      } catch(e) {
-        // JSONP fallback for POST via GET params
-        const params = Object.entries(body).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
-        return await apiJsonp(action + '&' + params);
-      }
-    }
+    // All requests go through JSONP GET to avoid CORS
+    return await apiJsonp(action, body);
   } catch(e) {
     console.warn('API error:', e.message);
     return { error: 'offline' };
