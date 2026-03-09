@@ -666,6 +666,59 @@ h1,h2,h3,h4{font-family:var(--font2);font-weight:700;letter-spacing:.02em}
   </div>
 </div>
 
+
+<div class="modal-overlay" id="modal-edit-zlecenie">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edytuj zlecenie</div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-zl-id">
+      <div class="form-group">
+        <label class="form-label">Klient</label>
+        <select class="form-select" id="edit-zl-klient"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Zadanie / opis</label>
+        <textarea class="form-textarea" id="edit-zl-zadanie"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input type="date" class="form-input" id="edit-zl-data">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="edit-zl-status">
+            <option value="🆕 nowe">🆕 nowe</option>
+            <option value="⚙️ w toku">⚙️ w toku</option>
+            <option value="✅ zakończone">✅ zakończone</option>
+            <option value="🧾 zafakturowane">🧾 zafakturowane</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Przychód (zł)</label>
+          <input type="number" class="form-input" id="edit-zl-przychod">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Koszt (zł)</label>
+          <input type="number" class="form-input" id="edit-zl-koszt">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notatki</label>
+        <input type="text" class="form-input" id="edit-zl-notatki">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="deleteZlecenie(document.getElementById('edit-zl-id').value)">🗑 Usuń</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-zlecenie')">Anuluj</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditZlecenie()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════
 // CONFIG – wklej URL z Apps Script Web App
@@ -999,10 +1052,13 @@ function openZlecenieDetail(id) {
 async function changeStatus(id, status) {
   const z = STATE.zlecenia.find(x => x.id === id);
   if (!z) return;
+  // Update locally immediately
   z.status = status;
-  const res = await api('updateStatus', 'POST', { id, status });
-  if (!res.error) { toast('✅ Status zaktualizowany'); renderView(currentView); }
   closeModal('modal-detail');
+  toast('✅ Status: ' + status);
+  renderView(currentView);
+  // Save to Sheets in background
+  api('updateStatus', 'POST', { id, status });
 }
 
 // ══════════════════════════════════════════════
@@ -1665,6 +1721,73 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 });
 
 function openFab() { openModal('modal-fab'); fillZlecenieDates(); }
+
+
+// ══════════════════════════════════════════════
+// EDYCJA ZLECENIA
+// ══════════════════════════════════════════════
+function openEditZlecenie(id) {
+  const z = STATE.zlecenia.find(x => x.id === id);
+  if (!z) return;
+  closeModal('modal-detail');
+
+  document.getElementById('edit-zl-id').value = z.id;
+  document.getElementById('edit-zl-zadanie').value = z.zadanie || '';
+  document.getElementById('edit-zl-data').value = z.data || '';
+  document.getElementById('edit-zl-notatki').value = z.notatki || '';
+  document.getElementById('edit-zl-przychod').value = z.przychod || '';
+  document.getElementById('edit-zl-koszt').value = z.koszt || '';
+
+  const selK = document.getElementById('edit-zl-klient');
+  selK.innerHTML = STATE.klienci.map(k =>
+    `<option ${k.nazwa===z.klient?'selected':''}>${k.nazwa}</option>`
+  ).join('');
+
+  const selS = document.getElementById('edit-zl-status');
+  Array.from(selS.options).forEach(o => o.selected = o.value === z.status);
+
+  openModal('modal-edit-zlecenie');
+}
+
+async function saveEditZlecenie() {
+  const id       = document.getElementById('edit-zl-id').value;
+  const z        = STATE.zlecenia.find(x => x.id === id);
+  if (!z) return;
+
+  const klient   = document.getElementById('edit-zl-klient').value;
+  const zadanie  = document.getElementById('edit-zl-zadanie').value;
+  const data     = document.getElementById('edit-zl-data').value;
+  const status   = document.getElementById('edit-zl-status').value;
+  const przychod = parseFloat(document.getElementById('edit-zl-przychod').value) || 0;
+  const koszt    = parseFloat(document.getElementById('edit-zl-koszt').value) || 0;
+  const notatki  = document.getElementById('edit-zl-notatki').value;
+
+  // Update locally immediately
+  z.klient   = klient;
+  z.zadanie  = zadanie;
+  z.data     = data;
+  z.status   = status;
+  z.przychod = przychod;
+  z.koszt    = koszt;
+  z.bilans   = przychod - koszt;
+  z.notatki  = notatki;
+
+  closeModal('modal-edit-zlecenie');
+  toast('✅ Zlecenie zaktualizowane');
+  renderView(currentView);
+
+  // Save to Sheets in background
+  await api('updateZlecenie', 'POST', { id, klient, zadanie, data, status, przychod, koszt, notatki });
+}
+
+function deleteZlecenie(id) {
+  if (!confirm('Usunąć zlecenie ' + id + '?')) return;
+  STATE.zlecenia = STATE.zlecenia.filter(x => x.id !== id);
+  closeModal('modal-edit-zlecenie');
+  toast('🗑 Zlecenie usunięte lokalnie');
+  renderView(currentView);
+  api('deleteZlecenie', 'POST', { id });
+}
 
 // ══════════════════════════════════════════════
 // TOAST
