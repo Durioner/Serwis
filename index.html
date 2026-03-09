@@ -402,6 +402,7 @@ h1,h2,h3,h4{font-family:var(--font2);font-weight:700;letter-spacing:.02em}
   <div class="view" id="view-zlecenia"><!-- filled by JS --></div>
   <div class="view" id="view-klienci"><!-- filled by JS --></div>
   <div class="view" id="view-zadania"><!-- filled by JS --></div>
+  <div class="view" id="view-tydzien"><!-- filled by JS --></div>
   <div class="view" id="view-more"><!-- filled by JS --></div>
 
   <!-- BOTTOM NAV -->
@@ -418,12 +419,16 @@ h1,h2,h3,h4{font-family:var(--font2);font-weight:700;letter-spacing:.02em}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span>Klienci</span>
     </button>
+    <button class="nav-btn" data-view="tydzien" onclick="switchView('tydzien',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Tydzień</span>
+    </button>
     <button class="nav-btn" data-view="zadania" onclick="switchView('zadania',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><circle cx="12" cy="12" r="10"/></svg>
       <span>Zadania</span>
     </button>
     <button class="nav-btn" data-view="more" onclick="switchView('more',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
       <span>Więcej</span>
     </button>
   </nav>
@@ -632,6 +637,50 @@ h1,h2,h3,h4{font-family:var(--font2);font-weight:700;letter-spacing:.02em}
   </div>
 </div>
 
+
+<div class="modal-overlay" id="modal-historia">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="historia-title">Historia auta</div>
+    <div class="modal-body">
+      <div id="historia-body"></div>
+      <div class="sep"></div>
+      <div class="section-label">Dodaj auto</div>
+      <div class="form-group">
+        <label class="form-label">Tablica rejestracyjna</label>
+        <input type="text" class="form-input" id="hist-tablica" placeholder="np. WA 12345" style="text-transform:uppercase">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Marka</label>
+          <input type="text" class="form-input" id="hist-marka" placeholder="np. BMW">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model</label>
+          <input type="text" class="form-input" id="hist-model" placeholder="np. 3 E46">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Rok</label>
+          <input type="number" class="form-input" id="hist-rok" placeholder="2005">
+        </div>
+        <div class="form-group">
+          <label class="form-label">VIN</label>
+          <input type="text" class="form-input" id="hist-vin" placeholder="opcjonalnie">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notatka o aucie</label>
+        <input type="text" class="form-input" id="hist-notatka" placeholder="np. wymiana oleju co 10k km">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-historia')">Zamknij</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveAuto()">Zapisz auto</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-notatnik">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -886,6 +935,7 @@ function renderView(v) {
   if (v === 'dashboard') renderDashboard();
   if (v === 'zlecenia')  renderZlecenia();
   if (v === 'klienci')   renderKlienci();
+  if (v === 'tydzien')   renderTydzien();
   if (v === 'zadania')   renderZadania();
   if (v === 'more')      renderMore();
 }
@@ -1001,6 +1051,105 @@ function renderChartPrzychody() {
       }
     }
   });
+}
+
+
+// ══════════════════════════════════════════════
+// WIDOK TYGODNIA
+// ══════════════════════════════════════════════
+function renderTydzien() {
+  const el  = document.getElementById('view-tydzien');
+  const now = new Date();
+
+  // Znajdź poniedziałek bieżącego tygodnia
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+
+  // Przyciski nawigacji tygodnia
+  const weekOffset = STATE.weekOffset || 0;
+  const weekStart  = new Date(mon);
+  weekStart.setDate(mon.getDate() + weekOffset * 7);
+
+  const dni = ['Pon','Wt','Śr','Czw','Pt','Sob','Niedz'];
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    days.push(d);
+  }
+
+  const weekLabel = days[0].toLocaleDateString('pl-PL',{day:'numeric',month:'long'}) +
+    ' – ' + days[6].toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="STATE.weekOffset=(STATE.weekOffset||0)-1;renderTydzien()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div style="font-family:var(--font2);font-size:14px;font-weight:700;text-align:center">${weekLabel}</div>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="STATE.weekOffset=(STATE.weekOffset||0)+1;renderTydzien()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+  `;
+
+  let totalPrzychod = 0, totalZlecen = 0;
+
+  days.forEach((d, i) => {
+    const dateStr   = d.toISOString().split('T')[0];
+    const isToday   = dateStr === now.toISOString().split('T')[0];
+    const wizyty    = STATE.zlecenia.filter(z => z.data === dateStr);
+    const dzienPrzychod = wizyty.reduce((a,z) => a+(parseFloat(z.przychod)||0), 0);
+    totalPrzychod += dzienPrzychod;
+    totalZlecen   += wizyty.length;
+
+    html += `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="
+            width:40px;height:40px;border-radius:50%;flex-shrink:0;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            background:${isToday?'var(--accent)':'var(--surface)'};
+            border:1px solid ${isToday?'var(--accent)':'var(--border)'};
+          ">
+            <span style="font-size:9px;font-weight:700;color:${isToday?'#000':'var(--text3)'};letter-spacing:.05em">${dni[i]}</span>
+            <span style="font-family:var(--font2);font-size:16px;font-weight:800;color:${isToday?'#000':'var(--text)'};line-height:1">${d.getDate()}</span>
+          </div>
+          <div style="flex:1">
+            ${wizyty.length === 0
+              ? `<span style="font-size:12px;color:var(--text3)">Brak wizyt</span>`
+              : `<span style="font-size:12px;color:var(--text2)">${wizyty.length} wizyt${wizyty.length>1?'y':''} · <span style="color:var(--green);font-weight:700">${fmt(dzienPrzychod)} zł</span></span>`
+            }
+          </div>
+          <button class="btn btn-ghost btn-sm" style="padding:6px 10px;font-size:11px" onclick="openModalZlecenie('${dateStr}')">+ zlecenie</button>
+        </div>
+        ${wizyty.map(z => `
+          <div class="zlecenie-row" style="margin-left:50px;margin-bottom:6px" onclick="openZlecenieDetail('${z.id}')">
+            <div class="zlecenie-dot" style="background:${z.status?.includes('nowe')?'#ff8c42':z.status?.includes('toku')?'#ffd166':z.status?.includes('zakończone')?'#00c896':'#00b4d8'}"></div>
+            <div class="zlecenie-body">
+              <div class="zlecenie-klient">${z.klient}</div>
+              <div class="zlecenie-zadanie">${z.zadanie}</div>
+            </div>
+            ${z.przychod > 0 ? `<div class="zlecenie-price">${fmt(z.przychod)}<span style="font-size:10px;color:var(--text2)"> zł</span></div>` : ''}
+          </div>`).join('')}
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <div><div class="stat-label">Tydzień razem</div><div style="font-family:var(--font2);font-size:20px;font-weight:800;color:var(--green)">${fmt(totalPrzychod)} zł</div></div>
+      <div style="text-align:right"><div class="stat-label">Zlecenia</div><div style="font-family:var(--font2);font-size:20px;font-weight:800">${totalZlecen}</div></div>
+    </div>
+  `;
+
+  el.innerHTML = html;
+}
+
+function openModalZlecenie(dateStr) {
+  openModal('modal-zlecenie');
+  fillZlecenieDates();
+  document.getElementById('zl-data').value = dateStr;
 }
 
 // ══════════════════════════════════════════════
@@ -1162,6 +1311,7 @@ function openKlientDetail(id) {
         ${tel ? `<a href="https://wa.me/${tel.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost" style="flex:1">📱 WhatsApp</a>` : ''}
         <button class="btn btn-ghost" style="flex:1" onclick="sendMessage('${k.nazwa}','${adres}')">✉ Wiadomość</button>
       </div>
+      <button class="btn btn-ghost btn-block" onclick="openHistoria('${k.nazwa}')">🚗 Historia aut</button>
       <button class="btn btn-ghost btn-block" onclick="openNotatnik('${k.nazwa}')">📝 Dodaj notatkę</button>
     </div>
     ${zlecenia.length > 0 ? `
@@ -1675,11 +1825,9 @@ async function requestNotifications() {
 }
 
 function scheduleNotifications() {
-  // Planuj codzienne powiadomienia przez SW
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    scheduleDaily(8, 0,  'Serwis PRO+ – Plan dnia', buildPlanDniaMsg());
-    scheduleDaily(20, 0, 'Serwis PRO+ – Koniec dnia', buildKoniecDniaMsg());
-  }
+  scheduleDaily(8,  0,  'Serwis PRO+ – Plan dnia',    buildPlanDniaMsg);
+  scheduleDaily(20, 0,  'Serwis PRO+ – Koniec dnia',  buildKoniecDniaMsg);
+  scheduleDaily(12, 0,  'Serwis PRO+ – Zaległe',      buildZalegleMsg);
 }
 
 function scheduleDaily(hour, min, title, body) {
@@ -1689,12 +1837,14 @@ function scheduleDaily(hour, min, title, body) {
   if (target <= now) target.setDate(target.getDate() + 1);
   const delay = target - now;
   setTimeout(() => {
-    if (Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '/icon-192.png' });
+    const msg = typeof body === 'function' ? body() : body;
+    if (Notification.permission === 'granted' && msg) {
+      new Notification(title, { body: msg, icon: '/icon-192.png' });
     }
     setInterval(() => {
-      if (Notification.permission === 'granted') {
-        new Notification(title, { body: hour === 8 ? buildPlanDniaMsg() : buildKoniecDniaMsg(), icon: '/icon-192.png' });
+      const msg2 = typeof body === 'function' ? body() : body;
+      if (Notification.permission === 'granted' && msg2) {
+        new Notification(title, { body: msg2, icon: '/icon-192.png' });
       }
     }, 24 * 60 * 60 * 1000);
   }, delay);
@@ -1711,6 +1861,104 @@ function buildKoniecDniaMsg() {
   const niezamkn = STATE.zlecenia.filter(z => z.status === '🆕 nowe' || z.status === '⚙️ w toku');
   if (niezamkn.length === 0) return '✅ Wszystkie zlecenia zamknięte. Dobra robota!';
   return `Masz ${niezamkn.length} niezamkniętych zleceń. Sprawdź plan!`;
+}
+
+function buildZalegleMsg() {
+  const piecDni = new Date();
+  piecDni.setDate(piecDni.getDate() - 5);
+  const prog = piecDni.toISOString().split('T')[0];
+  const zaległe = STATE.zlecenia.filter(z =>
+    (z.status === '🆕 nowe' || z.status === '⚙️ w toku') && z.data < prog
+  );
+  if (zaległe.length === 0) return null;
+  return `${zaległe.length} zleceń bez aktualizacji od ponad 5 dni: ` +
+    zaległe.slice(0,2).map(z => z.klient).join(', ') +
+    (zaległe.length > 2 ? ' i inne' : '');
+}
+
+
+// ══════════════════════════════════════════════
+// HISTORIA AUT
+// ══════════════════════════════════════════════
+function getAuta() {
+  try { return JSON.parse(localStorage.getItem('auta') || '{}'); } catch(e) { return {}; }
+}
+function saveAuta(auta) {
+  localStorage.setItem('auta', JSON.stringify(auta));
+}
+
+function openHistoria(klientNazwa) {
+  const auta   = getAuta();
+  const kAuta  = auta[klientNazwa] || [];
+  const zlecenia = STATE.zlecenia.filter(z => z.klient === klientNazwa);
+
+  document.getElementById('historia-title').textContent = klientNazwa + ' – auta';
+  document.getElementById('hist-tablica').value = '';
+  document.getElementById('hist-marka').value   = '';
+  document.getElementById('hist-model').value   = '';
+  document.getElementById('hist-rok').value     = '';
+  document.getElementById('hist-vin').value     = '';
+  document.getElementById('hist-notatka').value = '';
+  document.getElementById('hist-tablica').dataset.klient = klientNazwa;
+
+  let html = '';
+  if (kAuta.length === 0) {
+    html = '<div style="color:var(--text3);font-size:13px;margin-bottom:8px">Brak zapisanych aut</div>';
+  } else {
+    html = kAuta.map((a, i) => `
+      <div class="card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-family:var(--font2);font-size:18px;font-weight:800;letter-spacing:.08em">${a.tablica}</div>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px">${[a.marka,a.model,a.rok].filter(Boolean).join(' ')}</div>
+            ${a.vin ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">VIN: ${a.vin}</div>` : ''}
+            ${a.notatka ? `<div style="font-size:12px;color:var(--accent);margin-top:4px">📝 ${a.notatka}</div>` : ''}
+          </div>
+          <button onclick="deleteAuto('${klientNazwa}',${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:4px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        ${zlecenia.length > 0 ? `
+        <div class="sep" style="margin:10px 0 8px"></div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Historia serwisu</div>
+        ${zlecenia.slice(0,4).map(z => `
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:12px">${z.zadanie}</div>
+            <div style="font-size:11px;color:var(--text3);white-space:nowrap;margin-left:8px">${z.data}</div>
+          </div>`).join('')}
+        ` : ''}
+      </div>`).join('');
+  }
+
+  document.getElementById('historia-body').innerHTML = html;
+  closeModal('modal-detail');
+  openModal('modal-historia');
+}
+
+function saveAuto() {
+  const klient  = document.getElementById('hist-tablica').dataset.klient;
+  const tablica = document.getElementById('hist-tablica').value.trim().toUpperCase();
+  if (!tablica) { toast('⚠ Wpisz tablicę rejestracyjną'); return; }
+
+  const auta   = getAuta();
+  if (!auta[klient]) auta[klient] = [];
+  auta[klient].push({
+    tablica,
+    marka:   document.getElementById('hist-marka').value.trim(),
+    model:   document.getElementById('hist-model').value.trim(),
+    rok:     document.getElementById('hist-rok').value.trim(),
+    vin:     document.getElementById('hist-vin').value.trim(),
+    notatka: document.getElementById('hist-notatka').value.trim(),
+  });
+  saveAuta(auta);
+  toast('✅ Auto zapisane!');
+  openHistoria(klient);
+}
+
+function deleteAuto(klient, idx) {
+  const auta = getAuta();
+  if (auta[klient]) { auta[klient].splice(idx, 1); saveAuta(auta); }
+  openHistoria(klient);
 }
 
 // ══════════════════════════════════════════════
