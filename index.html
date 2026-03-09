@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0f14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Serwis PRO+</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ── RESET & ROOT ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:       #0a0f14;
+  --bg2:      #0f1923;
+  --bg3:      #131f2e;
+  --surface:  #172535;
+  --surface2: #1c2e42;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.12);
+  --text:     #e8edf2;
+  --text2:    #8fa3b8;
+  --text3:    #4d6478;
+  --accent:   #00b4d8;
+  --accent2:  #0077a3;
+  --green:    #00c896;
+  --red:      #ff4d6d;
+  --orange:   #ff8c42;
+  --yellow:   #ffd166;
+  --purple:   #a78bfa;
+  --r:        12px;
+  --r2:       8px;
+  --sh:       0 4px 24px rgba(0,0,0,.4);
+  --sh2:      0 2px 8px rgba(0,0,0,.3);
+  --font:     'Barlow', sans-serif;
+  --font2:    'Barlow Condensed', sans-serif;
+  --nav-h:    64px;
+  --safe-b:   env(safe-area-inset-bottom, 0px);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font)}
+body{display:flex;flex-direction:column}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+
+/* ── TYPOGRAPHY ── */
+h1,h2,h3,h4{font-family:var(--font2);font-weight:700;letter-spacing:.02em}
+
+/* ── LAYOUT ── */
+#app{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.view{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;padding-bottom:calc(var(--nav-h) + var(--safe-b) + 16px);display:none;animation:fadeIn .2s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TOP BAR ── */
+#topbar{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(20px);
+}
+#topbar-title{font-family:var(--font2);font-size:20px;font-weight:800;letter-spacing:.05em;color:var(--accent)}
+#topbar-sub{font-size:12px;color:var(--text3);margin-top:1px}
+#topbar-right{display:flex;gap:8px}
+
+/* ── BOTTOM NAV ── */
+#nav{
+  height:var(--nav-h);
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;
+  padding-bottom:var(--safe-b);
+  position:relative;z-index:100;
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:8px 4px;cursor:pointer;border:none;background:none;
+  color:var(--text3);transition:color .15s;font-family:var(--font);
+}
+.nav-btn.active{color:var(--accent)}
+.nav-btn svg{width:22px;height:22px;stroke-width:1.8}
+.nav-btn span{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+
+/* ── CARDS ── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:16px;
+  margin-bottom:12px;
+  box-shadow:var(--sh2);
+}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-family:var(--font2);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text2)}
+
+/* ── STAT GRID ── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:14px;position:relative;overflow:hidden;
+}
+.stat-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--accent);opacity:.6;
+}
+.stat-box.green::before{background:var(--green)}
+.stat-box.orange::before{background:var(--orange)}
+.stat-box.purple::before{background:var(--purple)}
+.stat-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.stat-value{font-family:var(--font2);font-size:24px;font-weight:800;color:var(--text);line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* ── ZLECENIE ROW ── */
+.zlecenie-row{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:14px;margin-bottom:8px;cursor:pointer;
+  transition:border-color .15s,background .15s;
+  display:flex;gap:12px;align-items:flex-start;
+}
+.zlecenie-row:active{background:var(--surface2);border-color:var(--border2)}
+.zlecenie-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.zlecenie-body{flex:1;min-width:0}
+.zlecenie-klient{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zlecenie-zadanie{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zlecenie-meta{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.tag{font-size:10px;font-weight:600;letter-spacing:.05em;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.tag-nowe{background:rgba(255,140,66,.15);color:var(--orange)}
+.tag-toku{background:rgba(255,209,102,.15);color:var(--yellow)}
+.tag-zakonczone{background:rgba(0,200,150,.15);color:var(--green)}
+.tag-zafakturowane{background:rgba(0,180,216,.15);color:var(--accent)}
+.zlecenie-price{font-family:var(--font2);font-weight:700;font-size:16px;color:var(--green);white-space:nowrap}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 20px;border-radius:var(--r2);border:none;cursor:pointer;
+  font-family:var(--font);font-size:14px;font-weight:600;letter-spacing:.02em;
+  transition:all .15s;white-space:nowrap;
+}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:active{background:var(--accent2);transform:scale(.98)}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+.btn-ghost:active{background:var(--surface);transform:scale(.98)}
+.btn-danger{background:rgba(255,77,109,.15);color:var(--red);border:1px solid rgba(255,77,109,.3)}
+.btn-green{background:var(--green);color:#000}
+.btn-sm{padding:8px 14px;font-size:12px}
+.btn-block{width:100%;display:flex}
+.btn-icon{padding:10px;border-radius:var(--r2)}
+
+/* ── FAB ── */
+#fab{
+  position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);right:16px;
+  width:56px;height:56px;border-radius:50%;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(0,180,216,.4);cursor:pointer;border:none;
+  z-index:200;transition:transform .15s,box-shadow .15s;
+}
+#fab:active{transform:scale(.93);box-shadow:0 2px 10px rgba(0,180,216,.3)}
+#fab svg{width:24px;height:24px;color:#000}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;
+  display:none;align-items:flex-end;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.open{display:flex;animation:modalIn .25s ease}
+@keyframes modalIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--bg2);border-radius:20px 20px 0 0;
+  width:100%;max-height:92vh;overflow-y:auto;
+  padding:8px 0 calc(var(--safe-b) + 16px);
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:8px auto 20px}
+.modal-title{font-family:var(--font2);font-size:22px;font-weight:800;padding:0 20px 16px;border-bottom:1px solid var(--border)}
+.modal-body{padding:20px}
+.modal-footer{padding:16px 20px 0;display:flex;gap:10px}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:16px}
+.form-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;display:block}
+.form-input,.form-select,.form-textarea{
+  width:100%;background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r2);padding:12px 14px;color:var(--text);
+  font-family:var(--font);font-size:15px;outline:none;
+  transition:border-color .15s;
+  -webkit-appearance:none;appearance:none;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent)}
+.form-textarea{min-height:80px;resize:none}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ── SECTIONS ── */
+.section-label{
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text3);margin-bottom:10px;margin-top:4px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── BADGE ── */
+.badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;border-radius:9px;padding:0 5px;
+  font-size:10px;font-weight:700;background:var(--red);color:#fff;
+}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--text3)}
+.empty svg{width:48px;height:48px;margin-bottom:16px;opacity:.3}
+.empty p{font-size:14px;margin-top:8px}
+
+/* ── KLIENT CARD ── */
+.klient-row{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px;cursor:pointer;
+  transition:border-color .15s;
+}
+.klient-row:active{border-color:var(--border2)}
+.klient-avatar{
+  width:42px;height:42px;border-radius:50%;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--font2);font-size:16px;font-weight:800;color:var(--accent);
+}
+.klient-info{flex:1;min-width:0}
+.klient-name{font-weight:600;font-size:15px}
+.klient-addr{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.klient-actions{display:flex;gap:8px}
+
+/* ── REGION BADGE ── */
+.region-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.04em}
+.region-Wschód{background:rgba(0,200,150,.12);color:var(--green)}
+.region-Zachód{background:rgba(0,180,216,.12);color:var(--accent)}
+.region-Południe{background:rgba(167,139,250,.12);color:var(--purple)}
+.region-Daleko{background:rgba(255,140,66,.12);color:var(--orange)}
+
+/* ── ZADANIA ── */
+.zadanie-row{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;
+}
+.zadanie-check{
+  width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);
+  flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;margin-top:1px;
+}
+.zadanie-check.done{background:var(--green);border-color:var(--green)}
+.zadanie-body{flex:1;min-width:0}
+.zadanie-tytul{font-weight:600;font-size:15px}
+.zadanie-tytul.done{text-decoration:line-through;color:var(--text3)}
+.zadanie-meta{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
+.prio-pilne{color:var(--red)}
+.prio-wysoki{color:var(--orange)}
+.prio-normalny{color:var(--yellow)}
+.prio-niski{color:var(--green)}
+
+/* ── CHART CONTAINER ── */
+.chart-wrap{position:relative;height:200px;margin-top:4px}
+
+/* ── DETAIL VIEW ── */
+.detail-header{
+  background:linear-gradient(135deg,var(--surface) 0%,var(--bg3) 100%);
+  border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:12px;
+}
+.detail-id{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-bottom:6px}
+.detail-klient{font-family:var(--font2);font-size:28px;font-weight:800;line-height:1.1}
+.detail-zadanie{font-size:14px;color:var(--text2);margin-top:6px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.detail-item{background:var(--bg2);border-radius:var(--r2);padding:10px 12px}
+.detail-item-label{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.detail-item-value{font-weight:600;font-size:14px}
+
+/* ── VOICE BTN ── */
+#voice-btn{
+  width:64px;height:64px;border-radius:50%;border:none;
+  background:var(--surface2);color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;flex-shrink:0;
+}
+#voice-btn.recording{background:var(--red);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,77,109,.4)}50%{box-shadow:0 0 0 12px rgba(255,77,109,0)}}
+
+/* ── SCANNER ── */
+#scanner-wrap{
+  background:#000;border-radius:var(--r);overflow:hidden;
+  position:relative;margin-bottom:12px;aspect-ratio:16/9;
+}
+#scanner-video{width:100%;height:100%;object-fit:cover}
+.scanner-frame{
+  position:absolute;inset:20%;border:2px solid var(--accent);border-radius:8px;
+  box-shadow:0 0 0 1000px rgba(0,0,0,.5);
+}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 80px);left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:40px;padding:10px 20px;font-size:13px;font-weight:600;
+  white-space:nowrap;z-index:1000;opacity:0;transition:all .3s;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── LOADING ── */
+.spinner{
+  width:32px;height:32px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:48px;color:var(--text3);font-size:13px}
+
+/* ── NOTIFICATION BELL ── */
+#notif-btn{
+  width:36px;height:36px;border-radius:50%;background:var(--surface2);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;
+}
+
+/* ── WAZE BTN ── */
+.waze-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+  background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.3);
+  border-radius:var(--r2);color:var(--accent);font-size:12px;font-weight:600;
+  cursor:pointer;text-decoration:none;transition:background .15s;
+}
+.waze-btn:active{background:rgba(0,180,216,.2)}
+
+/* ── FAKTURA ── */
+.faktura-preview{
+  background:#fff;color:#000;border-radius:var(--r);
+  padding:20px;font-size:12px;line-height:1.5;
+  font-family:'Barlow',sans-serif;
+}
+
+/* ── SEPARATOR ── */
+.sep{height:1px;background:var(--border);margin:16px 0}
+
+/* ── SWIPE TO DELETE ── */
+.swipeable{position:relative;overflow:hidden}
+.swipe-action{
+  position:absolute;right:0;top:0;bottom:0;width:80px;
+  background:var(--red);display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:11px;font-weight:700;letter-spacing:.05em;
+  transform:translateX(100%);transition:transform .2s;border-radius:0 var(--r2) var(--r2) 0;
+}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:var(--surface);border-radius:var(--r2);padding:4px;margin-bottom:16px}
+.tab{flex:1;padding:8px;border-radius:6px;border:none;background:none;color:var(--text3);
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center}
+.tab.active{background:var(--surface2);color:var(--text)}
+
+/* ── OFFLINE BANNER ── */
+#offline-banner{
+  background:var(--orange);color:#000;text-align:center;
+  font-size:12px;font-weight:700;padding:6px;display:none;
+}
+
+/* ── RESPONSIVE ── */
+@media(min-width:600px){
+  .stat-grid{grid-template-columns:repeat(4,1fr)}
+  .modal{max-width:480px;border-radius:20px;margin:auto}
+  .modal-overlay{align-items:center}
+}
+</style>
+</head>
+<body>
+
+<div id="offline-banner">📡 Tryb offline – dane mogą być nieaktualne</div>
+
+<div id="app">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div>
+      <div id="topbar-title">SERWIS PRO+</div>
+      <div id="topbar-sub" id="topbar-date"></div>
+    </div>
+    <div id="topbar-right">
+      <button id="notif-btn" onclick="requestNotifications()" title="Powiadomienia">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- VIEWS -->
+  <div class="view active" id="view-dashboard"><!-- filled by JS --></div>
+  <div class="view" id="view-zlecenia"><!-- filled by JS --></div>
+  <div class="view" id="view-klienci"><!-- filled by JS --></div>
+  <div class="view" id="view-zadania"><!-- filled by JS --></div>
+  <div class="view" id="view-more"><!-- filled by JS --></div>
+
+  <!-- BOTTOM NAV -->
+  <nav id="nav">
+    <button class="nav-btn active" data-view="dashboard" onclick="switchView('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-btn" data-view="zlecenia" onclick="switchView('zlecenia',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>Zlecenia</span>
+    </button>
+    <button class="nav-btn" data-view="klienci" onclick="switchView('klienci',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Klienci</span>
+    </button>
+    <button class="nav-btn" data-view="zadania" onclick="switchView('zadania',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><circle cx="12" cy="12" r="10"/></svg>
+      <span>Zadania</span>
+    </button>
+    <button class="nav-btn" data-view="more" onclick="switchView('more',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      <span>Więcej</span>
+    </button>
+  </nav>
+</div>
+
+<!-- FAB -->
+<button id="fab" onclick="openFab()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-zlecenie">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nowe zlecenie</div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Klient</label>
+        <select class="form-select" id="zl-klient"><option value="">Wybierz klienta...</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Zadanie / opis</label>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <textarea class="form-textarea" id="zl-zadanie" placeholder="np. Wymiana oleju, diagnostyka..."></textarea>
+          <button id="voice-btn" onclick="toggleVoice('zl-zadanie')" title="Dyktuj głosem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="22" height="22"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input type="date" class="form-input" id="zl-data">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="zl-status">
+            <option value="🆕 nowe">🆕 nowe</option>
+            <option value="⚙️ w toku">⚙️ w toku</option>
+            <option value="✅ zakończone">✅ zakończone</option>
+            <option value="🧾 zafakturowane">🧾 zafakturowane</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Przychód (zł)</label>
+          <input type="number" class="form-input" id="zl-przychod" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Koszt (zł)</label>
+          <input type="number" class="form-input" id="zl-koszt" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notatki</label>
+        <input type="text" class="form-input" id="zl-notatki" placeholder="Opcjonalnie...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-zlecenie')">Anuluj</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveZlecenie()">Zapisz zlecenie</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-klient">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nowy klient</div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nazwa / Imię i nazwisko</label>
+        <input type="text" class="form-input" id="kl-nazwa" placeholder="np. Jan Kowalski">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adres</label>
+        <input type="text" class="form-input" id="kl-adres" placeholder="ul. Przykładowa 1">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Miasto</label>
+          <input type="text" class="form-input" id="kl-miasto" placeholder="Warszawa">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Region</label>
+          <select class="form-select" id="kl-region">
+            <option>Wschód</option><option>Zachód</option><option>Południe</option><option>Daleko</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-klient')">Anuluj</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveKlient()">Zapisz klienta</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-zadanie">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nowe zadanie</div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tytuł</label>
+        <input type="text" class="form-input" id="zad-tytul" placeholder="Co trzeba zrobić?">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Priorytet</label>
+          <select class="form-select" id="zad-prio">
+            <option value="🔴 pilne">🔴 Pilne</option>
+            <option value="🟠 wysoki">🟠 Wysoki</option>
+            <option value="🟡 normalny" selected>🟡 Normalny</option>
+            <option value="🟢 niski">🟢 Niski</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Termin</label>
+          <input type="date" class="form-input" id="zad-termin">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Powtórzenie</label>
+          <select class="form-select" id="zad-pow">
+            <option value="jednorazowe">Jednorazowe</option>
+            <option value="codziennie">Codziennie</option>
+            <option value="co tydzień">Co tydzień</option>
+            <option value="co miesiąc">Co miesiąc</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Klient (opcja)</label>
+          <select class="form-select" id="zad-klient"><option value="">Brak</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notatki</label>
+        <input type="text" class="form-input" id="zad-notatki" placeholder="Opcjonalnie...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-zadanie')">Anuluj</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveZadanie()">Zapisz zadanie</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-fab">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-body" style="display:grid;gap:10px">
+      <button class="btn btn-ghost btn-block" onclick="closeModal('modal-fab');openModal('modal-zlecenie');fillZlecenieDates()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Nowe zlecenie
+      </button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal('modal-fab');openModal('modal-klient')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Nowy klient
+      </button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal('modal-fab');openModal('modal-zadanie')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Nowe zadanie
+      </button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal('modal-fab');openScanner()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+        Skanuj tablicę / VIN
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-scanner">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Skaner</div>
+    <div class="modal-body">
+      <div id="scanner-wrap">
+        <video id="scanner-video" autoplay playsinline></video>
+        <div class="scanner-frame"></div>
+      </div>
+      <div class="tabs" style="margin-bottom:12px">
+        <button class="tab active" onclick="setScanMode('tablica',this)">Tablica rej.</button>
+        <button class="tab" onclick="setScanMode('vin',this)">VIN</button>
+      </div>
+      <div id="scan-result" style="background:var(--surface);border-radius:var(--r2);padding:14px;min-height:48px;font-family:var(--font2);font-size:18px;font-weight:700;letter-spacing:.1em;text-align:center;color:var(--accent)">
+        Skieruj kamerę na tablicę...
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="captureFrame()">📸 Zrób zdjęcie</button>
+        <button class="btn btn-ghost" style="flex:1" onclick="closeScanner()">Zamknij</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="modal-detail-body" class="modal-body" style="padding-top:0"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-notatnik">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Notatka do klienta</div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Klient</label>
+        <select class="form-select" id="not-klient"><option value="">Wybierz...</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Typ</label>
+          <select class="form-select" id="not-typ">
+            <option>Wizyta</option><option>Telefon</option><option>Email</option>
+            <option>Uwaga</option><option>Reklamacja</option><option>Inne</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Następny kontakt</label>
+          <input type="date" class="form-input" id="not-nastepny">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notatka</label>
+        <textarea class="form-textarea" id="not-tresc" placeholder="Opis..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-notatnik')">Anuluj</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveNotatka()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG – wklej URL z Apps Script Web App
+// ══════════════════════════════════════════════
+const API_URL = localStorage.getItem('api_url') || 'WKLEJ_URL_APPS_SCRIPT_TUTAJ';
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let STATE = {
+  zlecenia:  [],
+  klienci:   [],
+  zadania:   JSON.parse(localStorage.getItem('zadania') || '[]'),
+  notatnik:  [],
+  stats:     null,
+  loaded:    false,
+  scanMode:  'tablica',
+  scanStream: null,
+  recognition: null,
+  charts:    {},
+};
+
+// ══════════════════════════════════════════════
+// API
+// ══════════════════════════════════════════════
+function apiJsonp(action) {
+  return new Promise((resolve) => {
+    const cbName = 'cb_' + action + '_' + Date.now();
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      document.body.removeChild(script);
+      resolve({ error: 'timeout' });
+    }, 10000);
+    window[cbName] = (data) => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      document.body.removeChild(script);
+      resolve(data);
+    };
+    script.src = API_URL + '?action=' + action + '&callback=' + cbName;
+    script.onerror = () => { clearTimeout(timeout); resolve({ error: 'offline' }); };
+    document.body.appendChild(script);
+  });
+}
+
+async function apiPost(body) {
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(body)
+    });
+    return await resp.json();
+  } catch(e) {
+    // CORS fallback – use JSONP with encoded body via GET
+    console.warn('POST fallback:', e.message);
+    return { error: 'offline' };
+  }
+}
+
+async function api(action, method='GET', body=null) {
+  try {
+    if (!body) {
+      return await apiJsonp(action);
+    } else {
+      // For POST: try fetch first, fallback to JSONP with params
+      try {
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action, ...body })
+        });
+        return await resp.json();
+      } catch(e) {
+        // JSONP fallback for POST via GET params
+        const params = Object.entries(body).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
+        return await apiJsonp(action + '&' + params);
+      }
+    }
+  } catch(e) {
+    console.warn('API error:', e.message);
+    return { error: 'offline' };
+  }
+}
+
+async function loadAll() {
+  showLoading();
+  const [stats, plan, klienci] = await Promise.all([
+    api('getStats'), api('getPlan'), api('getKlienci')
+  ]);
+  STATE.stats    = stats.error ? null : stats;
+  STATE.zlecenia = plan.zlecenia || [];
+  STATE.klienci  = klienci.klienci || [];
+  STATE.loaded   = true;
+  renderAll();
+  hideLoading();
+}
+
+function showLoading() {
+  document.getElementById('view-dashboard').innerHTML = '<div class="loading"><div class="spinner"></div><span>Ładowanie danych...</span></div>';
+}
+function hideLoading() {}
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+let currentView = 'dashboard';
+function switchView(v, btn) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  if(btn) btn.classList.add('active');
+  currentView = v;
+  renderView(v);
+  document.getElementById('fab').style.display = v === 'more' ? 'none' : 'flex';
+}
+
+function renderAll() {
+  renderView(currentView);
+}
+
+function renderView(v) {
+  if (v === 'dashboard') renderDashboard();
+  if (v === 'zlecenia')  renderZlecenia();
+  if (v === 'klienci')   renderKlienci();
+  if (v === 'zadania')   renderZadania();
+  if (v === 'more')      renderMore();
+}
+
+// ══════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════
+function renderDashboard() {
+  const s   = STATE.stats;
+  const now = new Date();
+  const months = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+  document.getElementById('topbar-sub').textContent = formatDate(now);
+
+  const dzis = STATE.zlecenia.filter(z => z.data === toDateStr(now));
+  const niezamkniete = STATE.zlecenia.filter(z => z.status === '🆕 nowe' || z.status === '⚙️ w toku');
+
+  const el = document.getElementById('view-dashboard');
+  el.innerHTML = `
+    <div class="section-label">Ten miesiąc</div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">Przychód</div>
+        <div class="stat-value">${fmt(s?.miesiac?.przychod||0)}</div>
+        <div class="stat-sub">zł brutto</div>
+      </div>
+      <div class="stat-box green">
+        <div class="stat-label">Zysk</div>
+        <div class="stat-value">${fmt((s?.miesiac?.przychod||0)-(s?.miesiac?.koszt||0))}</div>
+        <div class="stat-sub">zł netto</div>
+      </div>
+      <div class="stat-box orange">
+        <div class="stat-label">Zlecenia</div>
+        <div class="stat-value">${s?.miesiac?.zlecenia||0}</div>
+        <div class="stat-sub">w tym miesiącu</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-label">YTD</div>
+        <div class="stat-value">${fmt(s?.ytd?.przychod||0)}</div>
+        <div class="stat-sub">zł od początku roku</div>
+      </div>
+    </div>
+
+    <div class="section-label">Status zleceń</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      ${statusBox('🆕 Nowe', s?.statusCount?.nowe||0,'tag-nowe')}
+      ${statusBox('⚙️ W toku', s?.statusCount?.wToku||0,'tag-toku')}
+      ${statusBox('✅ Zakończone', s?.statusCount?.zakonczone||0,'tag-zakonczone')}
+      ${statusBox('🧾 Zafakturowane', s?.statusCount?.zafakturowane||0,'tag-zafakturowane')}
+    </div>
+
+    ${dzis.length > 0 ? `
+    <div class="section-label">Dziś (${dzis.length})</div>
+    ${dzis.map(z => zlecenieRow(z)).join('')}
+    ` : ''}
+
+    ${niezamkniete.length > 0 ? `
+    <div class="section-label" style="color:var(--orange)">⚠ Niezamknięte (${niezamkniete.length})</div>
+    ${niezamkniete.slice(0,3).map(z => zlecenieRow(z)).join('')}
+    ${niezamkniete.length > 3 ? `<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">i ${niezamkniete.length-3} więcej...</div>` : ''}
+    ` : ''}
+
+    <div class="section-label">Przychody – ostatnie 6 miesięcy</div>
+    <div class="card">
+      <div class="chart-wrap"><canvas id="chart-przychody"></canvas></div>
+    </div>
+  `;
+
+  setTimeout(() => renderChartPrzychody(), 100);
+}
+
+function statusBox(lbl, val, cls) {
+  return `<div class="card" style="margin-bottom:0;padding:12px">
+    <div class="stat-label">${lbl}</div>
+    <div class="stat-value" style="font-size:28px">${val}</div>
+  </div>`;
+}
+
+function renderChartPrzychody() {
+  const canvas = document.getElementById('chart-przychody');
+  if (!canvas) return;
+  if (STATE.charts.przychody) STATE.charts.przychody.destroy();
+
+  const now = new Date();
+  const labels = [], przychody = [], koszty = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const m = d.getMonth(); const y = d.getFullYear();
+    labels.push(['Sty','Lut','Mar','Kwi','Maj','Cze','Lip','Sie','Wrz','Paź','Lis','Gru'][m]);
+    const miesiac = STATE.zlecenia.filter(z => {
+      const zd = new Date(z.data);
+      return zd.getMonth()===m && zd.getFullYear()===y;
+    });
+    przychody.push(miesiac.reduce((a,z) => a+(parseFloat(z.przychod)||0), 0));
+    koszty.push(miesiac.reduce((a,z) => a+(parseFloat(z.koszt)||0), 0));
+  }
+
+  STATE.charts.przychody = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Przychód', data: przychody, backgroundColor: 'rgba(0,180,216,.7)', borderRadius: 4 },
+        { label: 'Koszt',    data: koszty,    backgroundColor: 'rgba(255,77,109,.5)', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8fa3b8', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8fa3b8' } },
+        y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8fa3b8', callback: v => fmt(v) } }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════
+// ZLECENIA
+// ══════════════════════════════════════════════
+let zlFilter = 'wszystkie';
+function renderZlecenia() {
+  const statuses = ['wszystkie','nowe','w toku','zakończone','zafakturowane'];
+  const filtered = zlFilter === 'wszystkie'
+    ? STATE.zlecenia
+    : STATE.zlecenia.filter(z => z.status && z.status.toLowerCase().includes(zlFilter));
+
+  const sorted = [...filtered].sort((a,b) => new Date(b.data) - new Date(a.data));
+
+  document.getElementById('view-zlecenia').innerHTML = `
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none">
+      ${statuses.map(s => `<button class="tag ${zlFilter===s?'tag-toku':''}" style="padding:6px 14px;cursor:pointer;white-space:nowrap;background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text)" onclick="zlFilter='${s}';renderZlecenia()">${s}</button>`).join('')}
+    </div>
+    ${sorted.length === 0
+      ? `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/></svg><p>Brak zleceń</p></div>`
+      : sorted.map(z => zlecenieRow(z)).join('')
+    }
+  `;
+}
+
+function zlecenieRow(z) {
+  const dot = z.status?.includes('nowe') ? '#ff8c42'
+    : z.status?.includes('toku') ? '#ffd166'
+    : z.status?.includes('zakończone') ? '#00c896' : '#00b4d8';
+  const tagCls = z.status?.includes('nowe') ? 'tag-nowe'
+    : z.status?.includes('toku') ? 'tag-toku'
+    : z.status?.includes('zakończone') ? 'tag-zakonczone' : 'tag-zafakturowane';
+
+  return `<div class="zlecenie-row" onclick="openZlecenieDetail('${z.id}')">
+    <div class="zlecenie-dot" style="background:${dot}"></div>
+    <div class="zlecenie-body">
+      <div class="zlecenie-klient">${z.klient}</div>
+      <div class="zlecenie-zadanie">${z.zadanie}</div>
+      <div class="zlecenie-meta">
+        <span class="tag ${tagCls}">${z.status}</span>
+        <span style="font-size:11px;color:var(--text3)">${z.data}</span>
+        ${z.miasto ? `<span style="font-size:11px;color:var(--text3)">${z.miasto}</span>` : ''}
+      </div>
+    </div>
+    ${z.przychod > 0 ? `<div class="zlecenie-price">${fmt(z.przychod)}<span style="font-size:11px;font-weight:400;color:var(--text2)"> zł</span></div>` : ''}
+  </div>`;
+}
+
+function openZlecenieDetail(id) {
+  const z = STATE.zlecenia.find(x => x.id === id);
+  if (!z) return;
+  const bilans = (parseFloat(z.przychod)||0) - (parseFloat(z.koszt)||0);
+  const marzaProc = z.przychod > 0 ? Math.round(bilans/z.przychod*100) : 0;
+  const adresFull = [z.adres, z.miasto].filter(Boolean).join(', ');
+  const wazeUrl = adresFull ? `https://waze.com/ul?q=${encodeURIComponent(adresFull + ', Polska')}&navigate=yes` : null;
+
+  document.getElementById('modal-detail-body').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-id">${z.id}</div>
+      <div class="detail-klient">${z.klient}</div>
+      <div class="detail-zadanie">${z.zadanie}</div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-item-label">Data</div><div class="detail-item-value">${z.data}</div></div>
+        <div class="detail-item"><div class="detail-item-label">Status</div><div class="detail-item-value">${z.status}</div></div>
+        <div class="detail-item"><div class="detail-item-label">Przychód</div><div class="detail-item-value" style="color:var(--green)">${fmt(z.przychod)} zł</div></div>
+        <div class="detail-item"><div class="detail-item-label">Koszt</div><div class="detail-item-value" style="color:var(--red)">${fmt(z.koszt)} zł</div></div>
+        <div class="detail-item"><div class="detail-item-label">Zysk</div><div class="detail-item-value" style="color:${bilans>=0?'var(--green)':'var(--red)'}">${fmt(bilans)} zł</div></div>
+        <div class="detail-item"><div class="detail-item-label">Marża</div><div class="detail-item-value">${marzaProc}%</div></div>
+      </div>
+    </div>
+    ${adresFull ? `<div style="margin-bottom:12px">${wazeUrl ? `<a href="${wazeUrl}" class="waze-btn" target="_blank">🚗 Nawiguj w Waze – ${adresFull}</a>` : `<div style="font-size:13px;color:var(--text2)">${adresFull}</div>`}</div>` : ''}
+    ${z.notatki ? `<div class="card" style="margin-bottom:12px"><div class="card-title">Notatki</div><div style="font-size:14px;margin-top:8px">${z.notatki}</div></div>` : ''}
+    <div style="display:grid;gap:8px;margin-bottom:12px">
+      <div style="display:flex;gap:8px">
+        ${['🆕 nowe','⚙️ w toku','✅ zakończone','🧾 zafakturowane'].map(s =>
+          `<button class="btn btn-sm ${z.status===s?'btn-primary':'btn-ghost'}" style="flex:1;font-size:10px" onclick="changeStatus('${id}','${s}')">${s}</button>`
+        ).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openNotatnik('${z.klient}')">📝 Dodaj notatkę</button>
+        <button class="btn btn-green btn-sm" style="flex:1" onclick="generujFakture('${id}')">🧾 Faktura VAT</button>
+      </div>
+      ${adresFull ? `<button class="btn btn-ghost btn-sm btn-block" onclick="sendMessage('${z.klient}','${adresFull}')">💬 Wyślij wiadomość</button>` : ''}
+    </div>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('modal-detail')">Zamknij</button>
+  `;
+  openModal('modal-detail');
+}
+
+async function changeStatus(id, status) {
+  const z = STATE.zlecenia.find(x => x.id === id);
+  if (!z) return;
+  z.status = status;
+  const res = await api('updateStatus', 'POST', { id, status });
+  if (!res.error) { toast('✅ Status zaktualizowany'); renderView(currentView); }
+  closeModal('modal-detail');
+}
+
+// ══════════════════════════════════════════════
+// KLIENCI
+// ══════════════════════════════════════════════
+function renderKlienci() {
+  const el = document.getElementById('view-klienci');
+
+  if (STATE.klienci.length === 0) {
+    el.innerHTML = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Brak klientów</p></div>';
+    return;
+  }
+
+  el.innerHTML = STATE.klienci.map(k => {
+    const initials = k.nazwa.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const zleceniaCount = STATE.zlecenia.filter(z => z.klient === k.nazwa).length;
+    const adres = [k.adres, k.miasto].filter(Boolean).join(', ');
+    const wazeUrl = adres ? `https://waze.com/ul?q=${encodeURIComponent(adres + ', Polska')}&navigate=yes` : null;
+
+    return `<div class="klient-row" onclick="openKlientDetail('${k.id}')">
+      <div class="klient-avatar">${initials}</div>
+      <div class="klient-info">
+        <div class="klient-name">${k.nazwa}</div>
+        <div class="klient-addr">${adres || '—'}</div>
+        <div style="display:flex;gap:6px;margin-top:5px">
+          <span class="region-badge region-${k.region}">${k.region}</span>
+          <span style="font-size:10px;color:var(--text3)">${zleceniaCount} zleceń</span>
+        </div>
+      </div>
+      ${wazeUrl ? `<a href="${wazeUrl}" target="_blank" class="waze-btn" onclick="event.stopPropagation()" style="padding:8px;flex-direction:column;gap:2px;font-size:9px">🚗<span>Waze</span></a>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function openKlientDetail(id) {
+  const k = STATE.klienci.find(x => x.id === id);
+  if (!k) return;
+  const zlecenia = STATE.zlecenia.filter(z => z.klient === k.nazwa);
+  const przychod = zlecenia.reduce((a,z) => a+(parseFloat(z.przychod)||0), 0);
+  const adres = [k.adres, k.miasto].filter(Boolean).join(', ');
+  const wazeUrl = adres ? `https://waze.com/ul?q=${encodeURIComponent(adres + ', Polska')}&navigate=yes` : null;
+  const tel = k.tel || '';
+
+  document.getElementById('modal-detail-body').innerHTML = `
+    <div class="detail-header" style="margin-bottom:12px">
+      <div class="detail-id">${k.id} · <span class="region-badge region-${k.region}">${k.region}</span></div>
+      <div class="detail-klient">${k.nazwa}</div>
+      ${adres ? `<div class="detail-zadanie">${adres}</div>` : ''}
+      <div class="detail-grid" style="margin-top:14px">
+        <div class="detail-item"><div class="detail-item-label">Zlecenia</div><div class="detail-item-value">${zlecenia.length}</div></div>
+        <div class="detail-item"><div class="detail-item-label">Łączny przychód</div><div class="detail-item-value" style="color:var(--green)">${fmt(przychod)} zł</div></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:8px;margin-bottom:12px">
+      ${wazeUrl ? `<a href="${wazeUrl}" target="_blank" class="btn btn-ghost">🚗 Nawiguj w Waze</a>` : ''}
+      <div style="display:flex;gap:8px">
+        ${tel ? `<a href="sms:${tel}" class="btn btn-ghost" style="flex:1">💬 SMS</a>` : ''}
+        ${tel ? `<a href="https://wa.me/${tel.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost" style="flex:1">📱 WhatsApp</a>` : ''}
+        <button class="btn btn-ghost" style="flex:1" onclick="sendMessage('${k.nazwa}','${adres}')">✉ Wiadomość</button>
+      </div>
+      <button class="btn btn-ghost btn-block" onclick="openNotatnik('${k.nazwa}')">📝 Dodaj notatkę</button>
+    </div>
+    ${zlecenia.length > 0 ? `
+    <div class="section-label">Historia zleceń</div>
+    ${zlecenia.slice(0,5).map(z => `
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:13px;font-weight:600">${z.zadanie}</div><div style="font-size:11px;color:var(--text3)">${z.data} · ${z.status}</div></div>
+        <div style="font-family:var(--font2);font-weight:700;color:var(--green)">${fmt(z.przychod)} zł</div>
+      </div>`).join('')}
+    ` : ''}
+    <div style="height:12px"></div>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('modal-detail')">Zamknij</button>
+  `;
+  openModal('modal-detail');
+}
+
+// ══════════════════════════════════════════════
+// ZADANIA (localStorage)
+// ══════════════════════════════════════════════
+let zadFilter = 'aktywne';
+function renderZadania() {
+  const now = new Date().toISOString().split('T')[0];
+  let list = STATE.zadania;
+  if (zadFilter === 'aktywne') list = list.filter(z => z.status !== 'zrobione');
+  if (zadFilter === 'zrobione') list = list.filter(z => z.status === 'zrobione');
+
+  const przeterminowane = list.filter(z => z.termin && z.termin < now && z.status !== 'zrobione');
+  const dzisiaj = list.filter(z => z.termin === now && z.status !== 'zrobione');
+  const pozostale = list.filter(z => (!z.termin || z.termin > now) && z.status !== 'zrobione');
+  const zrobione = list.filter(z => z.status === 'zrobione');
+
+  const el = document.getElementById('view-zadania');
+  el.innerHTML = `
+    <div class="tabs">
+      <button class="tab ${zadFilter==='aktywne'?'active':''}" onclick="zadFilter='aktywne';renderZadania()">Aktywne</button>
+      <button class="tab ${zadFilter==='wszystkie'?'active':''}" onclick="zadFilter='wszystkie';renderZadania()">Wszystkie</button>
+      <button class="tab ${zadFilter==='zrobione'?'active':''}" onclick="zadFilter='zrobione';renderZadania()">Zrobione</button>
+    </div>
+    ${zadFilter !== 'zrobione' ? `
+      ${przeterminowane.length > 0 ? `<div class="section-label" style="color:var(--red)">⚠ Przeterminowane</div>${przeterminowane.map(z => zadanieRow(z)).join('')}` : ''}
+      ${dzisiaj.length > 0 ? `<div class="section-label" style="color:var(--yellow)">Dziś</div>${dzisiaj.map(z => zadanieRow(z)).join('')}` : ''}
+      ${pozostale.length > 0 ? `<div class="section-label">Nadchodzące</div>${pozostale.map(z => zadanieRow(z)).join('')}` : ''}
+      ${list.length === 0 ? '<div class="empty"><p>Brak aktywnych zadań 🎉</p></div>' : ''}
+    ` : zrobione.map(z => zadanieRow(z)).join('')}
+  `;
+}
+
+function zadanieRow(z) {
+  const done = z.status === 'zrobione';
+  const prioColor = z.prio?.includes('pilne') ? 'var(--red)' : z.prio?.includes('wysoki') ? 'var(--orange)' : z.prio?.includes('normalny') ? 'var(--yellow)' : 'var(--green)';
+  return `<div class="zadanie-row">
+    <div class="zadanie-check ${done?'done':''}" onclick="toggleZadanie('${z.id}')">
+      ${done ? `<svg viewBox="0 0 24 24" fill="none" stroke="#000" width="12" height="12"><path d="M20 6L9 17l-5-5"/></svg>` : ''}
+    </div>
+    <div class="zadanie-body">
+      <div class="zadanie-tytul ${done?'done':''}">${z.tytul}</div>
+      <div class="zadanie-meta">
+        <span style="font-size:11px;color:${prioColor};font-weight:700">${z.prio||''}</span>
+        ${z.termin ? `<span style="font-size:11px;color:var(--text3)">${z.termin}</span>` : ''}
+        ${z.klient ? `<span style="font-size:11px;color:var(--text3)">${z.klient}</span>` : ''}
+        ${z.pow && z.pow !== 'jednorazowe' ? `<span style="font-size:11px;color:var(--accent)">↻ ${z.pow}</span>` : ''}
+      </div>
+    </div>
+    <button onclick="deleteZadanie('${z.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:4px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>`;
+}
+
+function toggleZadanie(id) {
+  const z = STATE.zadania.find(x => x.id === id);
+  if (!z) return;
+  z.status = z.status === 'zrobione' ? 'aktywne' : 'zrobione';
+  if (z.status === 'zrobione' && z.pow !== 'jednorazowe') {
+    // Utwórz kolejne powtórzenie
+    const next = { ...z, id: Date.now().toString(), status: 'aktywne', termin: nextDate(z.termin, z.pow) };
+    STATE.zadania.push(next);
+  }
+  saveZadania();
+  renderZadania();
+}
+
+function deleteZadanie(id) {
+  STATE.zadania = STATE.zadania.filter(x => x.id !== id);
+  saveZadania();
+  renderZadania();
+}
+
+function saveZadania() {
+  localStorage.setItem('zadania', JSON.stringify(STATE.zadania));
+}
+
+function nextDate(dateStr, pow) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (pow === 'codziennie') d.setDate(d.getDate()+1);
+  if (pow === 'co tydzień') d.setDate(d.getDate()+7);
+  if (pow === 'co miesiąc') d.setMonth(d.getMonth()+1);
+  return d.toISOString().split('T')[0];
+}
+
+// ══════════════════════════════════════════════
+// MORE
+// ══════════════════════════════════════════════
+function renderMore() {
+  document.getElementById('view-more').innerHTML = `
+    <div class="section-label">Narzędzia</div>
+    <div style="display:grid;gap:8px;margin-bottom:16px">
+      <button class="btn btn-ghost btn-block" onclick="openScanner()">📸 Skaner tablic / VIN</button>
+      <button class="btn btn-ghost btn-block" onclick="openModal('modal-notatnik')">📝 Notatnik klienta</button>
+      <button class="btn btn-ghost btn-block" onclick="planDnia()">🗺 Optymalizuj trasę dnia</button>
+    </div>
+
+    <div class="section-label">Dane</div>
+    <div style="display:grid;gap:8px;margin-bottom:16px">
+      <button class="btn btn-ghost btn-block" onclick="loadAll()">🔄 Odśwież dane z arkusza</button>
+      <button class="btn btn-ghost btn-block" onclick="eksportKlienci()">📤 Eksport klientów do Waze</button>
+    </div>
+
+    <div class="section-label">Komunikacja</div>
+    <div style="display:grid;gap:8px;margin-bottom:16px">
+      <button class="btn btn-ghost btn-block" onclick="openSzablon('potwierdzenie')">✅ Potwierdź wizytę (SMS/WhatsApp)</button>
+      <button class="btn btn-ghost btn-block" onclick="openSzablon('przypomnienie')">⏰ Przypomnij o płatności</button>
+      <button class="btn btn-ghost btn-block" onclick="openSzablon('dojazd')">🚗 Jestem w drodze</button>
+    </div>
+
+    <div class="section-label">Powiadomienia</div>
+    <div style="display:grid;gap:8px;margin-bottom:16px">
+      <button class="btn btn-ghost btn-block" onclick="requestNotifications()">🔔 Włącz powiadomienia push</button>
+      <div class="card" style="font-size:12px;color:var(--text2)">
+        Powiadomienia: <strong style="color:var(--accent)">8:00</strong> plan dnia · <strong style="color:var(--accent)">20:00</strong> przypomnienie o zamknięciu
+      </div>
+    </div>
+
+    <div class="section-label">Ustawienia</div>
+    <div class="card">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">URL Apps Script API</label>
+        <input type="text" class="form-input" id="api-url-input" value="${localStorage.getItem('api_url')||''}" placeholder="https://script.google.com/macros/s/...">
+        <button class="btn btn-primary btn-sm" style="margin-top:8px;width:100%" onclick="saveApiUrl()">Zapisz URL</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveApiUrl() {
+  const v = document.getElementById('api-url-input').value.trim();
+  localStorage.setItem('api_url', v);
+  toast('✅ URL zapisany – przeładuj aplikację');
+}
+
+// ══════════════════════════════════════════════
+// SAVE FORMS
+// ══════════════════════════════════════════════
+function fillZlecenieDates() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('zl-data').value = today;
+  // Fill klient select
+  const sel = document.getElementById('zl-klient');
+  sel.innerHTML = '<option value="">Wybierz klienta...</option>' +
+    STATE.klienci.map(k => `<option>${k.nazwa}</option>`).join('');
+  const selK = document.getElementById('zad-klient');
+  if (selK) selK.innerHTML = '<option value="">Brak</option>' + STATE.klienci.map(k => `<option>${k.nazwa}</option>`).join('');
+}
+
+async function saveZlecenie() {
+  const body = {
+    klient:   document.getElementById('zl-klient').value,
+    zadanie:  document.getElementById('zl-zadanie').value,
+    data:     document.getElementById('zl-data').value,
+    status:   document.getElementById('zl-status').value,
+    przychod: document.getElementById('zl-przychod').value,
+    koszt:    document.getElementById('zl-koszt').value,
+    notatki:  document.getElementById('zl-notatki').value,
+  };
+  if (!body.klient || !body.zadanie) { toast('⚠ Wypełnij klienta i zadanie'); return; }
+
+  const res = await api('addZlecenie', 'POST', body);
+  if (res.error) { toast('❌ Błąd zapisu: ' + res.error); return; }
+  toast('✅ Zlecenie ' + res.id + ' zapisane!');
+  closeModal('modal-zlecenie');
+  await loadAll();
+}
+
+async function saveKlient() {
+  const body = {
+    nazwa:  document.getElementById('kl-nazwa').value,
+    adres:  document.getElementById('kl-adres').value,
+    miasto: document.getElementById('kl-miasto').value,
+    region: document.getElementById('kl-region').value,
+  };
+  if (!body.nazwa) { toast('⚠ Wpisz nazwę klienta'); return; }
+  const res = await api('addKlient', 'POST', body);
+  if (res.error) { toast('❌ Błąd: ' + res.error); return; }
+  toast('✅ Klient ' + res.id + ' dodany!');
+  closeModal('modal-klient');
+  await loadAll();
+}
+
+function saveZadanie() {
+  const z = {
+    id:      Date.now().toString(),
+    tytul:   document.getElementById('zad-tytul').value,
+    prio:    document.getElementById('zad-prio').value,
+    termin:  document.getElementById('zad-termin').value,
+    pow:     document.getElementById('zad-pow').value,
+    klient:  document.getElementById('zad-klient').value,
+    notatki: document.getElementById('zad-notatki').value,
+    status:  'aktywne',
+  };
+  if (!z.tytul) { toast('⚠ Wpisz tytuł zadania'); return; }
+  STATE.zadania.push(z);
+  saveZadania();
+  toast('✅ Zadanie dodane!');
+  closeModal('modal-zadanie');
+  renderZadania();
+}
+
+async function saveNotatka() {
+  const body = {
+    klient:   document.getElementById('not-klient').value,
+    typ:      document.getElementById('not-typ').value,
+    notatka:  document.getElementById('not-tresc').value,
+    nastepny: document.getElementById('not-nastepny').value,
+    data:     new Date().toISOString().split('T')[0],
+  };
+  const res = await api('addNotatka', 'POST', body);
+  if (!res.error) toast('✅ Notatka zapisana!');
+  closeModal('modal-notatnik');
+}
+
+// ══════════════════════════════════════════════
+// FAKTURA VAT PDF
+// ══════════════════════════════════════════════
+function generujFakture(id) {
+  const z = STATE.zlecenia.find(x => x.id === id);
+  if (!z) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const netto = parseFloat(z.przychod) || 0;
+  const vat23 = netto * 0.23;
+  const brutto = netto + vat23;
+  const dzis = new Date().toLocaleDateString('pl-PL');
+  const nrFaktury = 'FV/' + new Date().getFullYear() + '/' + String(new Date().getMonth()+1).padStart(2,'0') + '/' + z.id;
+
+  doc.setFont('helvetica');
+
+  // Nagłówek
+  doc.setFillColor(10, 15, 20);
+  doc.rect(0, 0, 210, 40, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22); doc.setFont('helvetica','bold');
+  doc.text('FAKTURA VAT', 20, 20);
+  doc.setFontSize(11); doc.setFont('helvetica','normal');
+  doc.text('Nr: ' + nrFaktury, 20, 30);
+  doc.text('Data: ' + dzis, 130, 20);
+  doc.text('Termin płatności: ' + dzis, 130, 30);
+
+  // Sprzedawca
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(10); doc.setFont('helvetica','bold');
+  doc.text('SPRZEDAWCA', 20, 55);
+  doc.setFont('helvetica','normal');
+  doc.text('[Twoja firma]', 20, 62);
+  doc.text('[Twój adres]', 20, 68);
+  doc.text('NIP: [Twój NIP]', 20, 74);
+
+  // Nabywca
+  doc.setFont('helvetica','bold');
+  doc.text('NABYWCA', 120, 55);
+  doc.setFont('helvetica','normal');
+  doc.text(z.klient, 120, 62);
+  if (z.adres) doc.text(z.adres, 120, 68);
+  if (z.miasto) doc.text(z.miasto, 120, 74);
+
+  // Separator
+  doc.setDrawColor(200, 200, 200);
+  doc.line(20, 82, 190, 82);
+
+  // Tabela
+  doc.setFillColor(240, 240, 240);
+  doc.rect(20, 85, 170, 8, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text('Lp.', 22, 91); doc.text('Opis', 32, 91);
+  doc.text('Netto', 120, 91); doc.text('VAT 23%', 145, 91); doc.text('Brutto', 170, 91);
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text('1', 22, 101);
+  doc.text(z.zadanie.substring(0, 50), 32, 101);
+  doc.text(netto.toFixed(2) + ' zł', 120, 101);
+  doc.text(vat23.toFixed(2) + ' zł', 145, 101);
+  doc.text(brutto.toFixed(2) + ' zł', 170, 101);
+
+  doc.line(20, 108, 190, 108);
+
+  // Suma
+  doc.setFont('helvetica','bold');
+  doc.text('RAZEM:', 120, 118);
+  doc.setTextColor(0, 150, 100);
+  doc.text(brutto.toFixed(2) + ' zł', 170, 118);
+  doc.setTextColor(0, 0, 0);
+
+  // Płatność
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Forma płatności: przelew bankowy', 20, 135);
+  doc.text('Bank: [Twój bank]  |  Nr konta: [Twój numer konta]', 20, 141);
+
+  // Podpis
+  doc.line(20, 265, 80, 265);
+  doc.line(130, 265, 190, 265);
+  doc.text('Podpis sprzedawcy', 20, 271);
+  doc.text('Podpis nabywcy', 130, 271);
+
+  doc.save('Faktura_' + z.id + '_' + z.klient.replace(/\s/g,'_') + '.pdf');
+  toast('✅ Faktura pobrana!');
+  closeModal('modal-detail');
+}
+
+// ══════════════════════════════════════════════
+// SZABLONY WIADOMOŚCI
+// ══════════════════════════════════════════════
+function sendMessage(klient, adres) {
+  openSzablonDla(klient, adres);
+}
+
+function openSzablon(typ) {
+  const klienci = STATE.klienci.map(k => k.nazwa).join(', ');
+  const klient = prompt('Dla klienta (lub wpisz nazwę):');
+  if (!klient) return;
+  openSzablonDla(klient, '', typ);
+}
+
+function openSzablonDla(klient, adres, typ='wybierz') {
+  const szablony = {
+    potwierdzenie: `Dzień dobry ${klient},\npotwierdzam wizytę serwisową. Do zobaczenia! 🔧`,
+    przypomnienie: `Dzień dobry ${klient},\nuprzejmie przypominam o nieuregulowanej płatności za wykonaną usługę serwisową.`,
+    dojazd:        `Dzień dobry ${klient},\njadę do Pana/Pani. Będę za ok. 30 minut. 🚗`,
+  };
+  const tekst = szablony[typ] || szablony.potwierdzenie;
+  const tel = STATE.klienci.find(k => k.nazwa === klient)?.tel || '';
+  const smsUrl = `sms:${tel}?body=${encodeURIComponent(tekst)}`;
+  const waUrl  = `https://wa.me/${tel.replace(/\D/g,'')}?text=${encodeURIComponent(tekst)}`;
+
+  document.getElementById('modal-detail-body').innerHTML = `
+    <div style="padding-bottom:12px">
+      <div class="detail-id">Wiadomość do: ${klient}</div>
+      <textarea class="form-textarea" id="msg-text" style="margin-top:12px;min-height:120px">${tekst}</textarea>
+    </div>
+    <div style="display:grid;gap:8px">
+      <a href="${smsUrl}" class="btn btn-ghost">💬 Wyślij SMS</a>
+      <a href="${waUrl}" target="_blank" class="btn btn-green">📱 Wyślij WhatsApp</a>
+      <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('msg-text').value);toast('✅ Skopiowano!')">📋 Kopiuj tekst</button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal('modal-detail')">Zamknij</button>
+    </div>
+  `;
+  openModal('modal-detail');
+}
+
+// ══════════════════════════════════════════════
+// PLAN DNIA / TRASA
+// ══════════════════════════════════════════════
+function planDnia() {
+  const dzis = new Date().toISOString().split('T')[0];
+  const wizytySerwisowe = STATE.zlecenia.filter(z => z.data === dzis && z.adres);
+
+  if (wizytySerwisowe.length === 0) {
+    toast('Brak zaplanowanych wizyt na dziś z adresem');
+    return;
+  }
+
+  if (!navigator.geolocation) { toast('Brak geolokalizacji'); return; }
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+
+    // Prosta optymalizacja – sortuj wg odległości od aktualnej pozycji
+    const punkty = wizytySerwisowe.map(z => {
+      const adres = encodeURIComponent([z.adres, z.miasto, 'Polska'].filter(Boolean).join(', '));
+      return { z, adres, dist: null };
+    });
+
+    document.getElementById('modal-detail-body').innerHTML = `
+      <div class="detail-id">Plan dnia – ${dzis}</div>
+      <div style="margin:12px 0;font-size:13px;color:var(--text2)">Twoja pozycja: ${lat.toFixed(4)}, ${lon.toFixed(4)}</div>
+      ${punkty.map((p, i) => `
+        <div class="detail-item" style="margin-bottom:8px">
+          <div class="detail-item-label">Wizyta ${i+1}</div>
+          <div class="detail-item-value">${p.z.klient}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">${[p.z.adres,p.z.miasto].filter(Boolean).join(', ')}</div>
+          <a href="https://waze.com/ul?q=${p.adres}&navigate=yes" target="_blank" class="waze-btn" style="margin-top:8px;display:inline-flex">🚗 Nawiguj w Waze</a>
+        </div>`).join('')}
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeModal('modal-detail')">Zamknij</button>
+    `;
+    openModal('modal-detail');
+  }, () => toast('Nie można pobrać lokalizacji'));
+}
+
+// ══════════════════════════════════════════════
+// SKANER
+// ══════════════════════════════════════════════
+async function openScanner() {
+  openModal('modal-scanner');
+  try {
+    STATE.scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 } }
+    });
+    document.getElementById('scanner-video').srcObject = STATE.scanStream;
+  } catch(e) {
+    toast('❌ Brak dostępu do kamery');
+    closeModal('modal-scanner');
+  }
+}
+
+function closeScanner() {
+  if (STATE.scanStream) { STATE.scanStream.getTracks().forEach(t => t.stop()); STATE.scanStream = null; }
+  closeModal('modal-scanner');
+}
+
+function setScanMode(mode, btn) {
+  STATE.scanMode = mode;
+  document.querySelectorAll('#modal-scanner .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('scan-result').textContent = mode === 'tablica'
+    ? 'Skieruj kamerę na tablicę rejestracyjną...'
+    : 'Skieruj kamerę na numer VIN...';
+}
+
+async function captureFrame() {
+  const video = document.getElementById('scanner-video');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  document.getElementById('scan-result').textContent = '🔍 Przetwarzam...';
+
+  // OCR przez API Claude (Anthropic)
+  const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 100,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+            { type: 'text', text: STATE.scanMode === 'tablica'
+              ? 'Podaj TYLKO numer rejestracyjny z tablicy na zdjęciu. Sama litera/cyfry, bez niczego innego. Jeśli nie widzisz tablicy, napisz: BRAK.'
+              : 'Podaj TYLKO numer VIN z tego zdjęcia. Same znaki, bez spacji ani innych słów. Jeśli nie widzisz VIN, napisz: BRAK.'
+            }
+          ]
+        }]
+      })
+    });
+    const data = await resp.json();
+    const wynik = data.content?.[0]?.text?.trim() || 'Nie rozpoznano';
+    document.getElementById('scan-result').textContent = wynik;
+    if (wynik !== 'BRAK') {
+      navigator.clipboard?.writeText(wynik);
+      toast('✅ Skopiowano: ' + wynik);
+    }
+  } catch(e) {
+    document.getElementById('scan-result').textContent = 'Błąd OCR – spróbuj ponownie';
+  }
+}
+
+// ══════════════════════════════════════════════
+// VOICE
+// ══════════════════════════════════════════════
+function toggleVoice(targetId) {
+  const btn = document.getElementById('voice-btn');
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    toast('❌ Dyktowanie niedostępne w tej przeglądarce');
+    return;
+  }
+  if (STATE.recognition) {
+    STATE.recognition.stop();
+    STATE.recognition = null;
+    btn.classList.remove('recording');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  rec.lang = 'pl-PL';
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.onresult = e => {
+    const text = Array.from(e.results).map(r => r[0].transcript).join('');
+    document.getElementById(targetId).value = text;
+  };
+  rec.onend = () => { btn.classList.remove('recording'); STATE.recognition = null; };
+  rec.start();
+  STATE.recognition = rec;
+  btn.classList.add('recording');
+  toast('🎤 Mówię...');
+}
+
+// ══════════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════════
+async function requestNotifications() {
+  if (!('Notification' in window)) { toast('❌ Powiadomienia niedostępne'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { toast('❌ Brak zgody na powiadomienia'); return; }
+  toast('✅ Powiadomienia włączone!');
+  scheduleNotifications();
+}
+
+function scheduleNotifications() {
+  // Planuj codzienne powiadomienia przez SW
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    scheduleDaily(8, 0,  'Serwis PRO+ – Plan dnia', buildPlanDniaMsg());
+    scheduleDaily(20, 0, 'Serwis PRO+ – Koniec dnia', buildKoniecDniaMsg());
+  }
+}
+
+function scheduleDaily(hour, min, title, body) {
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(hour, min, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  const delay = target - now;
+  setTimeout(() => {
+    if (Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/icon-192.png' });
+    }
+    setInterval(() => {
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body: hour === 8 ? buildPlanDniaMsg() : buildKoniecDniaMsg(), icon: '/icon-192.png' });
+      }
+    }, 24 * 60 * 60 * 1000);
+  }, delay);
+}
+
+function buildPlanDniaMsg() {
+  const dzis = new Date().toISOString().split('T')[0];
+  const wizyt = STATE.zlecenia.filter(z => z.data === dzis);
+  if (wizyt.length === 0) return 'Dziś nie masz zaplanowanych wizyt.';
+  return `Masz ${wizyt.length} wizyt na dziś:\n` + wizyt.slice(0,3).map(z => `• ${z.klient}`).join('\n');
+}
+
+function buildKoniecDniaMsg() {
+  const niezamkn = STATE.zlecenia.filter(z => z.status === '🆕 nowe' || z.status === '⚙️ w toku');
+  if (niezamkn.length === 0) return '✅ Wszystkie zlecenia zamknięte. Dobra robota!';
+  return `Masz ${niezamkn.length} niezamkniętych zleceń. Sprawdź plan!`;
+}
+
+// ══════════════════════════════════════════════
+// NOTATNIK
+// ══════════════════════════════════════════════
+function openNotatnik(klient) {
+  const sel = document.getElementById('not-klient');
+  sel.innerHTML = '<option value="">Wybierz...</option>' +
+    STATE.klienci.map(k => `<option ${k.nazwa===klient?'selected':''}>${k.nazwa}</option>`).join('');
+  closeModal('modal-detail');
+  openModal('modal-notatnik');
+}
+
+// ══════════════════════════════════════════════
+// EKSPORT WAZE
+// ══════════════════════════════════════════════
+function eksportKlienci() {
+  const rows = ['Title,Note'];
+  STATE.klienci.filter(k => k.adres).forEach(k => {
+    const adres = [k.adres, k.miasto, 'Polska'].filter(Boolean).join(', ');
+    rows.push(`"${k.nazwa.replace(/"/g,'""')}","${adres.replace(/"/g,'""')}"`);
+  });
+  const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'klienci_waze_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  toast('✅ Plik CSV pobrany – zaimportuj do Google Maps');
+}
+
+// ══════════════════════════════════════════════
+// MODAL HELPERS
+// ══════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'modal-zlecenie') fillZlecenieDates();
+  if (id === 'modal-zadanie') {
+    const selK = document.getElementById('zad-klient');
+    if (selK) selK.innerHTML = '<option value="">Brak</option>' + STATE.klienci.map(k=>`<option>${k.nazwa}</option>`).join('');
+  }
+  if (id === 'modal-notatnik') {
+    const sel = document.getElementById('not-klient');
+    sel.innerHTML = '<option value="">Wybierz...</option>' + STATE.klienci.map(k=>`<option>${k.nazwa}</option>`).join('');
+  }
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+});
+
+function openFab() { openModal('modal-fab'); fillZlecenieDates(); }
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function fmt(n) {
+  const num = parseFloat(n) || 0;
+  return num.toLocaleString('pl-PL', { maximumFractionDigits: 0 });
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('pl-PL', { weekday:'long', day:'numeric', month:'long' });
+}
+
+function toDateStr(d) {
+  return d.toISOString().split('T')[0];
+}
+
+// ══════════════════════════════════════════════
+// OFFLINE DETECTION
+// ══════════════════════════════════════════════
+window.addEventListener('online',  () => { document.getElementById('offline-banner').style.display='none'; loadAll(); });
+window.addEventListener('offline', () => { document.getElementById('offline-banner').style.display='block'; });
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => {
+    console.log('SW zarejestrowany');
+  });
+}
+
+// Ustaw datę w topbarze
+document.getElementById('topbar-sub').textContent = formatDate(new Date());
+
+// Start
+loadAll();
+scheduleNotifications();
+</script>
+</body>
+</html>
